@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>백호의 순자산 계산기</title>
+<meta name="description" content="내 순자산을 1분 만에 계산해요. 입력한 숫자는 내 기기에만 저장돼요. 백호의 1년 돈관리 무료 양식.">
+<meta property="og:title" content="백호의 순자산 계산기"><meta property="og:description" content="통장 잔고 말고, 진짜 내 재산은 얼마일까? 1분 계산."><meta property="og:image" content="https://idght351-gif.github.io/tools/logo.png">
+<link rel="icon" href="logo.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="tools.css">
+</head><body>
+<div class="top"><div class="wrap"><img src="logo.png" alt="직장인 백호"><div class="brand">백호의 1년 돈관리<small>무료 양식 · 유튜브 @내돈은내손으로</small></div><a class="back" href="./">← 양식 목록</a></div></div>
+<div class="wrap">
+  <div class="hero">
+    <h1>통장 잔고 말고, <mark>진짜 내 재산</mark>은 얼마일까?</h1>
+    <p>있는 돈(자산)에서 갚을 돈(부채)을 빼면 순자산이에요. 칸에 숫자만 넣으면 자동으로 계산돼요.</p>
+    <div class="lock">🔒<span>입력한 숫자는 <b>이 휴대폰(브라우저)에만</b> 저장돼요. 어디로도 보내지 않아요. 다음에 들어와도 그대로 있어요.</span></div>
+    <div class="btns"><button id="ex">예시로 채워 보기</button><button class="ghost" id="clear">모두 지우기</button></div>
+  </div>
+
+  <div class="result">
+    <div class="big"><span class="label">내 순자산</span><span class="net" id="net">0</span><span class="man" id="netMan"></span></div>
+    <div class="stats">
+      <div class="stat"><b id="ta">0</b><span>총자산</span></div>
+      <div class="stat"><b id="td">0</b><span>총부채</span></div>
+      <div class="stat"><b id="dr">0%</b><span>부채 비율</span></div>
+    </div>
+  </div>
+
+  <section><h2><span class="tag as">자산</span>있는 돈 <span class="sum" id="sumA">0원</span></h2><div id="assets"></div></section>
+  <section><h2><span class="tag de">부채</span>갚을 돈 <span class="sum" id="sumD">0원</span></h2><div id="debts"></div></section>
+
+  <section><h2>내 자산은 어디에 있나요?</h2>
+    <div class="bars" id="mix"></div>
+    <div class="note" id="mixNote"></div>
+  </section>
+
+  <section><h2>저장하고 나누기</h2>
+    <div class="btns">
+      <button class="primary" id="card">📸 결과 이미지 저장</button>
+      <button id="print">🖨 PDF·인쇄</button>
+      <button id="csv">📄 엑셀용(CSV)</button>
+      <a class="btn" href="https://docs.google.com/spreadsheets/d/1ipgEZqWus5cyZ4JeE2KnIfHjFoEvZcUisGHxjZz_JPE/copy" target="_blank" rel="noopener">구글 시트 사본 만들기</a>
+    </div>
+  </section>
+
+  <section><h2>월별 기록 <span class="sum" style="font-size:13px;color:var(--mute);font-weight:600">매달 말일에 한 번</span></h2>
+    <div class="btns" style="margin:0 0 10px"><button class="primary" id="rec">✍ 이번 달 순자산 기록하기</button></div>
+    <div id="hist"></div>
+  </section>
+
+  <footer>
+    정보 제공용 무료 양식이며 투자 권유가 아니에요. 특정 앱·상품 추천 아님(협찬 아님). 금액은 직접 확인한 값을 넣어 주세요.<br>
+    백호의 1년 돈관리 프로젝트 · <a href="https://www.youtube.com/@내돈은내손으로">유튜브 @내돈은내손으로</a><a href="../privacy.html">개인정보처리방침</a>
+  </footer>
+</div>
+<script src="tools.js"></script>
+<script>
+const A = [
+  ['입출금 통장 (월급·생활비)', '어카운트인포 앱에서 내 계좌 한 번에 조회', 2000000, 'cash'],
+  ['비상금·파킹통장', '', 3000000, 'cash'],
+  ['예금·적금', '', 6000000, 'cash'],
+  ['주택청약', '청약 통장 앱 잔액', 2400000, 'cash'],
+  ['주식·ETF (평가금액)', '증권 앱의 평가금액', 4000000, 'inv'],
+  ['연금 (연금저축·IRP·퇴직연금 DC)', '내 연금 알아보기, 퇴직연금 앱', 3000000, 'pen'],
+  ['전세·월세 보증금', '임대차 계약서', 10000000, 'etc'],
+  ['부동산·자동차 (시세)', '시세 조회 앱', 0, 'etc'],
+  ['기타 (보험 해지환급금, 포인트 등)', '내보험다보여, 카드포인트 통합조회', 0, 'etc'],
+];
+const D = [
+  ['신용카드 다음 결제 예정액', '카드 앱의 결제 예정 금액', 1000000],
+  ['신용대출·마이너스통장', '크레딧포유에서 모든 대출 조회', 0],
+  ['학자금대출', '', 5000000],
+  ['전세대출', '', 0],
+  ['주택담보대출', '', 0],
+  ['기타 (할부 잔액 등)', '', 0],
+];
+const KEY = 'bh_networth_v1', HKEY = 'bh_networth_hist_v1';
+let st = BH.load(KEY, { a: A.map(() => ''), d: D.map(() => '') });
+let hist = BH.load(HKEY, []);
+const $ = id => document.getElementById(id);
+
+function rowHTML(name, hint, i, kind) {
+  return `<div class="row" data-say><div class="head"><span class="name">${name}</span></div>${hint ? `<div class="hint">📍 ${hint}</div>` : ''}
+  <div class="money"><input inputmode="numeric" autocomplete="off" placeholder="0" data-k="${kind}" data-i="${i}" aria-label="${name} 금액"><span class="won">원</span></div>
+  <div class="money" style="margin-top:2px"><span class="say" style="margin-left:auto"></span></div></div>`;
+}
+$('assets').innerHTML = A.map((r, i) => rowHTML(r[0], r[1], i, 'a')).join('');
+$('debts').innerHTML = D.map((r, i) => rowHTML(r[0], r[1], i, 'd')).join('');
+document.querySelectorAll('.money input').forEach(inp => {
+  const k = inp.dataset.k, i = +inp.dataset.i;
+  inp.value = st[k][i] ? BH.won(BH.num(st[k][i])) : '';
+  BH.moneyInput(inp, () => { st[k][i] = inp.value; BH.save(KEY, st); calc(); });
+});
+
+function totals() {
+  const a = st.a.map(BH.num), d = st.d.map(BH.num);
+  const ta = a.reduce((x, y) => x + y, 0), td = d.reduce((x, y) => x + y, 0);
+  const grp = g => A.reduce((s, r, i) => s + (r[3] === g ? a[i] : 0), 0);
+  return { ta, td, net: ta - td, dr: BH.pct(td, ta), mix: [['현금·예적금 (통장·비상금·예적금·청약)', BH.pct(grp('cash'), ta)], ['투자 (주식·ETF)', BH.pct(grp('inv'), ta)], ['연금', BH.pct(grp('pen'), ta)], ['보증금·실물·기타', BH.pct(grp('etc'), ta)]] };
+}
+function calc() {
+  const t = totals();
+  $('net').textContent = BH.won(t.net) + '원'; $('net').classList.toggle('neg', t.net < 0);
+  $('netMan').textContent = t.net ? '(' + BH.man(t.net) + ')' : '';
+  $('ta').textContent = BH.man(t.ta); $('td').textContent = BH.man(t.td); $('dr').textContent = BH.pctTxt(t.dr);
+  $('sumA').textContent = BH.man(t.ta); $('sumD').textContent = BH.man(t.td);
+  $('mix').innerHTML = t.mix.map(([k, v]) => `<div class="bar"><div class="t"><span>${k}</span><b>${BH.pctTxt(v)}</b></div><div class="track"><div class="fill" style="width:${Math.min(100, v)}%"></div></div></div>`).join('')
+    + `<div class="bar de"><div class="t"><span>부채 비율 (총부채 ÷ 총자산)</span><b>${BH.pctTxt(t.dr)}</b></div><div class="track"><div class="fill" style="width:${Math.min(100, t.dr)}%"></div></div></div>`;
+  $('mixNote').textContent = t.ta ? '' : '자산 칸에 숫자를 넣으면 비율이 나와요.';
+}
+function drawHist() {
+  if (!hist.length) { $('hist').innerHTML = '<div class="empty">아직 기록이 없어요. 매달 말일에 위 버튼을 한 번 눌러 주세요.</div>'; return; }
+  hist.sort((x, y) => x.m.localeCompare(y.m));
+  $('hist').innerHTML = `<table><tr><th>달</th><th>총자산</th><th>총부채</th><th>순자산</th><th>전달보다</th><th></th></tr>` +
+    hist.map((h, i) => { const ch = i ? h.net - hist[i - 1].net : null;
+      return `<tr><td>${h.m}</td><td>${BH.man(h.ta)}</td><td>${BH.man(h.td)}</td><td><b>${BH.man(h.net)}</b></td><td class="${ch > 0 ? 'up' : ch < 0 ? 'down' : ''}">${ch === null ? '시작' : (ch > 0 ? '+' : '') + BH.man(ch)}</td><td><button class="x" data-i="${i}" aria-label="삭제">×</button></td></tr>`; }).join('') + '</table>';
+  $('hist').querySelectorAll('.x').forEach(b => b.onclick = () => { if (confirm(hist[b.dataset.i].m + ' 기록을 지울까요?')) { hist.splice(b.dataset.i, 1); BH.save(HKEY, hist); drawHist(); } });
+}
+$('rec').onclick = () => {
+  const t = totals(); const d = new Date(); const m = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  hist = hist.filter(h => h.m !== m); hist.push({ m, ta: t.ta, td: t.td, net: t.net }); BH.save(HKEY, hist); drawHist();
+  BH.toast(m + ' 순자산을 기록했어요');
+};
+$('ex').onclick = () => { if (st.a.some(Boolean) || st.d.some(Boolean)) { if (!confirm('지금 넣은 숫자를 예시로 바꿀까요?')) return; }
+  st = { a: A.map(r => String(r[2])), d: D.map(r => String(r[2])) }; BH.save(KEY, st); location.reload(); };
+$('clear').onclick = () => { if (confirm('넣은 숫자를 모두 지울까요? (월별 기록은 남아요)')) { st = { a: A.map(() => ''), d: D.map(() => '') }; BH.save(KEY, st); location.reload(); } };
+$('print').onclick = () => window.print();
+$('csv').onclick = () => { const t = totals();
+  BH.csv('백호_순자산표', [['구분', '항목', '금액(원)'], ...A.map((r, i) => ['자산', r[0], BH.num(st.a[i])]), ['', '총자산', t.ta], ...D.map((r, i) => ['부채', r[0], BH.num(st.d[i])]), ['', '총부채', t.td], ['결과', '순자산', t.net], ['결과', '부채 비율(%)', t.dr.toFixed(1)]]); };
+$('card').onclick = () => { const t = totals();
+  BH.saveCard({ title: '백호의 순자산표', big: { label: '내 순자산', value: BH.man(t.net) }, bigNeg: t.net < 0,
+    lines: [['총자산', BH.man(t.ta)], ['총부채', BH.man(t.td)], ['부채 비율', BH.pctTxt(t.dr)]], bars: t.mix.map(([k, v]) => [k.replace(/ \(.*\)/, ''), v]) }); };
+calc(); drawHist();
+</script>
+</body></html>

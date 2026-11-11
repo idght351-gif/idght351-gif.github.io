@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>백호의 자산·부채표</title>
+<meta name="description" content="통장·투자·대출을 한 줄씩 적으면 순자산, 월 상환액, 평균 대출 금리가 자동 계산돼요. 입력한 숫자는 내 기기에만 저장돼요.">
+<meta property="og:title" content="백호의 자산·부채표"><meta property="og:description" content="내 통장·투자·대출을 한 장에. 어떤 대출부터 갚을지도 보여 줘요."><meta property="og:image" content="https://idght351-gif.github.io/tools/logo.png">
+<link rel="icon" href="logo.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="tools.css">
+</head><body>
+<div class="top"><div class="wrap"><img src="logo.png" alt="직장인 백호"><div class="brand">백호의 1년 돈관리<small>무료 양식 · 유튜브 @내돈은내손으로</small></div><a class="back" href="./">← 양식 목록</a></div></div>
+<div class="wrap">
+  <div class="hero">
+    <h1>내 통장·투자·대출, <mark>한 장에</mark> 정리해요</h1>
+    <p>가진 것(자산)과 갚을 것(부채)을 한 줄에 하나씩 적으면 합계·비율·월 상환액이 자동으로 나와요.</p>
+    <div class="lock">🔒<span>입력한 내용은 <b>이 휴대폰(브라우저)에만</b> 저장돼요. 어디로도 보내지 않아요.</span></div>
+    <div class="btns"><button id="ex">예시로 채워 보기</button><button class="ghost" id="clear">모두 지우기</button></div>
+  </div>
+
+  <div class="result">
+    <div class="big"><span class="label">순자산</span><span class="net" id="net">0</span><span class="man" id="netMan"></span></div>
+    <div class="stats">
+      <div class="stat"><b id="dr">0%</b><span>부채 비율</span></div>
+      <div class="stat"><b id="pay">0원</b><span>월 상환액 합계</span></div>
+      <div class="stat"><b id="rate">0%</b><span>평균 대출 금리</span></div>
+    </div>
+  </div>
+
+  <section><h2><span class="tag as">자산</span>가진 것 <span class="sum" id="sumA">0원</span></h2>
+    <div id="assets"></div><button class="add" id="addA">＋ 자산 한 줄 추가</button></section>
+  <section><h2><span class="tag de">부채</span>갚을 것 <span class="sum" id="sumD">0원</span></h2>
+    <div id="debts"></div><button class="add" id="addD">＋ 부채 한 줄 추가</button>
+    <div class="note">📍 내 대출은 '크레딧포유'(한국신용정보원)에서 한 번에 조회할 수 있어요.</div></section>
+
+  <section><h2>자산 종류별 비율</h2><div class="bars" id="mix"></div></section>
+  <section><h2>어떤 대출부터 갚을까요?</h2><div class="bars" id="order"></div>
+    <div class="note">금리가 높은 대출부터 갚는 게 이자를 가장 많이 아껴요. 중도상환수수료가 있는지는 금융사에 꼭 확인해 주세요.</div></section>
+
+  <section><h2>저장하고 나누기</h2>
+    <div class="btns">
+      <button class="primary" id="card">📸 결과 이미지 저장</button>
+      <button id="print">🖨 PDF·인쇄</button>
+      <button id="csv">📄 엑셀용(CSV)</button>
+      <a class="btn" href="https://docs.google.com/spreadsheets/d/1_TPZnx6xlpdfWL8sPISzR7h7SdWpGroC74Q73bEux2Q/copy" target="_blank" rel="noopener">구글 시트 사본 만들기</a>
+    </div>
+  </section>
+
+  <footer>
+    정보 제공용 무료 양식이며 투자·대출 권유가 아니에요. 특정 금융사·앱 추천 아님(협찬 아님). 금액은 직접 확인한 값을 넣어 주세요.<br>
+    백호의 1년 돈관리 프로젝트 · <a href="https://www.youtube.com/@내돈은내손으로">유튜브 @내돈은내손으로</a><a href="../privacy.html">개인정보처리방침</a>
+  </footer>
+</div>
+<script src="tools.js"></script>
+<script>
+const AK = ['현금', '예적금', '투자', '연금', '보증금', '실물', '기타'];
+const DK = ['신용카드', '신용대출', '마이너스통장', '학자금', '전세대출', '주택담보', '할부', '기타'];
+const KEY = 'bh_balance_v1';
+const blankA = () => ({ name: '', kind: '현금', org: '', amt: '', rate: '', memo: '' });
+const blankD = () => ({ name: '', kind: '신용대출', org: '', amt: '', rate: '', pay: '', due: '', memo: '' });
+let st = BH.load(KEY, { a: [blankA()], d: [blankD()] });
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const opt = (list, v) => list.map(x => `<option${x === v ? ' selected' : ''}>${x}</option>`).join('');
+
+function render() {
+  $('assets').innerHTML = st.a.map((r, i) => `<div class="item" data-say data-k="a" data-i="${i}"><button class="del" data-del>삭제 ✕</button>
+    <div class="grid"><div class="full"><label>항목</label><input data-f="name" value="${esc(r.name)}" placeholder="예: 비상금 통장"></div>
+    <div><label>종류</label><select data-f="kind">${opt(AK, r.kind)}</select></div>
+    <div><label>기관(은행·증권사)</label><input data-f="org" value="${esc(r.org)}" placeholder="○○은행"></div>
+    <div class="amt full"><label>금액(원) <span class="say"></span></label><input data-f="amt" data-money inputmode="numeric" value="${r.amt ? BH.won(BH.num(r.amt)) : ''}" placeholder="0"></div>
+    <div><label>금리·수익률(연 %)</label><input data-f="rate" inputmode="decimal" value="${esc(r.rate)}" placeholder="2.0"></div>
+    <div><label>메모</label><input data-f="memo" value="${esc(r.memo)}"></div></div></div>`).join('');
+  $('debts').innerHTML = st.d.map((r, i) => `<div class="item de" data-say data-k="d" data-i="${i}"><button class="del" data-del>삭제 ✕</button>
+    <div class="grid"><div class="full"><label>항목</label><input data-f="name" value="${esc(r.name)}" placeholder="예: 학자금대출"></div>
+    <div><label>종류</label><select data-f="kind">${opt(DK, r.kind)}</select></div>
+    <div><label>기관</label><input data-f="org" value="${esc(r.org)}" placeholder="○○기관"></div>
+    <div class="amt full"><label>남은 금액(원) <span class="say"></span></label><input data-f="amt" data-money inputmode="numeric" value="${r.amt ? BH.won(BH.num(r.amt)) : ''}" placeholder="0"></div>
+    <div><label>금리(연 %)</label><input data-f="rate" inputmode="decimal" value="${esc(r.rate)}" placeholder="3.0"></div>
+    <div class="amt"><label>월 상환액(원)</label><input data-f="pay" data-money inputmode="numeric" value="${r.pay ? BH.won(BH.num(r.pay)) : ''}" placeholder="0"></div>
+    <div><label>만기</label><input data-f="due" value="${esc(r.due)}" placeholder="2029-12"></div>
+    <div><label>메모</label><input data-f="memo" value="${esc(r.memo)}"></div></div></div>`).join('');
+  document.querySelectorAll('.item').forEach(box => {
+    const rec = st[box.dataset.k][+box.dataset.i];
+    box.querySelectorAll('[data-f]').forEach(el => {
+      const f = el.dataset.f;
+      if (el.hasAttribute('data-money')) {
+        // 금액 칸마다 '○만 원' 읽기: 남은 금액만 say를 쓰고 월 상환액은 쉼표만
+        if (f === 'amt') BH.moneyInput(el, () => { rec[f] = el.value; BH.save(KEY, st); calc(); });
+        else el.addEventListener('input', () => { const raw = el.value.replace(/[^\d]/g, ''); el.value = raw ? Number(raw).toLocaleString('ko-KR') : ''; rec[f] = el.value; BH.save(KEY, st); calc(); });
+      } else el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', () => { rec[f] = el.value; BH.save(KEY, st); calc(); });
+    });
+    box.querySelector('[data-del]').onclick = () => { const L = st[box.dataset.k]; L.splice(+box.dataset.i, 1); if (!L.length) L.push(box.dataset.k === 'a' ? blankA() : blankD()); BH.save(KEY, st); render(); };
+  });
+  calc();
+}
+function totals() {
+  const ta = st.a.reduce((s, r) => s + BH.num(r.amt), 0), td = st.d.reduce((s, r) => s + BH.num(r.amt), 0);
+  const pay = st.d.reduce((s, r) => s + BH.num(r.pay), 0);
+  const rate = td ? st.d.reduce((s, r) => s + BH.num(r.amt) * (parseFloat(r.rate) || 0), 0) / td : 0;
+  const mix = AK.map(k => [k, BH.pct(st.a.filter(r => r.kind === k).reduce((s, r) => s + BH.num(r.amt), 0), ta)]);
+  return { ta, td, net: ta - td, dr: BH.pct(td, ta), pay, rate, mix };
+}
+function calc() {
+  const t = totals();
+  $('net').textContent = BH.won(t.net) + '원'; $('net').classList.toggle('neg', t.net < 0);
+  $('netMan').textContent = t.net ? '(' + BH.man(t.net) + ')' : '';
+  $('dr').textContent = BH.pctTxt(t.dr); $('pay').textContent = BH.man(t.pay); $('rate').textContent = t.rate.toFixed(2) + '%';
+  $('sumA').textContent = BH.man(t.ta); $('sumD').textContent = BH.man(t.td);
+  $('mix').innerHTML = t.mix.filter(([, v]) => v > 0).map(([k, v]) => `<div class="bar"><div class="t"><span>${k}</span><b>${BH.pctTxt(v)}</b></div><div class="track"><div class="fill" style="width:${v}%"></div></div></div>`).join('') || '<div class="note" style="margin:0">자산 금액을 넣으면 비율이 나와요.</div>';
+  const ds = st.d.filter(r => BH.num(r.amt) > 0).sort((x, y) => (parseFloat(y.rate) || 0) - (parseFloat(x.rate) || 0));
+  const maxR = Math.max(1, ...ds.map(r => parseFloat(r.rate) || 0));
+  $('order').innerHTML = ds.map((r, i) => `<div class="bar de"><div class="t"><span>${i + 1}. ${esc(r.name || r.kind)}${i === 0 && ds.length > 1 ? '<span class="badge">먼저 갚기</span>' : ''}<br><small style="color:var(--mute)">남은 ${BH.man(BH.num(r.amt))}${r.pay ? ' · 월 ' + BH.man(BH.num(r.pay)) : ''}</small></span><b>연 ${(parseFloat(r.rate) || 0).toFixed(2)}%</b></div><div class="track"><div class="fill" style="width:${(parseFloat(r.rate) || 0) / maxR * 100}%"></div></div></div>`).join('') || '<div class="note" style="margin:0">부채의 남은 금액과 금리를 넣으면 갚을 순서가 나와요.</div>';
+}
+$('addA').onclick = () => { st.a.push(blankA()); BH.save(KEY, st); render(); };
+$('addD').onclick = () => { st.d.push(blankD()); BH.save(KEY, st); render(); };
+$('ex').onclick = () => {
+  if ((st.a.some(r => r.amt) || st.d.some(r => r.amt)) && !confirm('지금 넣은 내용을 예시로 바꿀까요?')) return;
+  st = { a: [{ name: '월급 통장', kind: '현금', org: '○○은행', amt: '2,000,000', rate: '0.1', memo: '' }, { name: '비상금 파킹통장', kind: '현금', org: '○○은행', amt: '3,000,000', rate: '2.0', memo: '생활비 3개월' }, { name: '적금', kind: '예적금', org: '○○은행', amt: '6,000,000', rate: '3.5', memo: '' }, { name: 'ETF', kind: '투자', org: '○○증권', amt: '4,000,000', rate: '', memo: '평가금액' }, { name: '전세 보증금', kind: '보증금', org: '', amt: '10,000,000', rate: '', memo: '' }],
+    d: [{ name: '학자금대출', kind: '학자금', org: '○○기관', amt: '5,000,000', rate: '3.0', pay: '150,000', due: '2029-12', memo: '' }, { name: '마이너스통장', kind: '마이너스통장', org: '○○은행', amt: '2,000,000', rate: '6.5', pay: '', due: '2027-06', memo: '' }] };
+  BH.save(KEY, st); render(); BH.toast('예시를 채웠어요');
+};
+$('clear').onclick = () => { if (confirm('넣은 내용을 모두 지울까요?')) { st = { a: [blankA()], d: [blankD()] }; BH.save(KEY, st); render(); } };
+$('print').onclick = () => window.print();
+$('csv').onclick = () => { const t = totals();
+  BH.csv('백호_자산부채표', [['구분', '항목', '종류', '기관', '금액(원)', '금리(연%)', '월 상환액(원)', '만기', '메모'],
+    ...st.a.map(r => ['자산', r.name, r.kind, r.org, BH.num(r.amt), r.rate, '', '', r.memo]),
+    ...st.d.map(r => ['부채', r.name, r.kind, r.org, BH.num(r.amt), r.rate, BH.num(r.pay), r.due, r.memo]),
+    [], ['요약', '총자산', '', '', t.ta], ['요약', '총부채', '', '', t.td], ['요약', '순자산', '', '', t.net], ['요약', '부채 비율(%)', '', '', t.dr.toFixed(1)], ['요약', '월 상환액 합계', '', '', t.pay], ['요약', '평균 대출 금리(%)', '', '', t.rate.toFixed(2)]]); };
+$('card').onclick = () => { const t = totals();
+  BH.saveCard({ title: '백호의 자산·부채표', big: { label: '순자산', value: BH.man(t.net) }, bigNeg: t.net < 0,
+    lines: [['총자산', BH.man(t.ta)], ['총부채', BH.man(t.td)], ['월 상환액', BH.man(t.pay)], ['평균 대출 금리', t.rate.toFixed(2) + '%']], bars: t.mix.filter(([, v]) => v > 0).slice(0, 4) }); };
+render();
+</script>
+</body></html>
